@@ -40,12 +40,10 @@ def load_cohort_data():
 raw_cohort_df = load_cohort_data()
 
 # ---------------------------------------------------------------
-# Session State for Presets & Navigation
+# Session State for Normal Baseline & Options
 # ---------------------------------------------------------------
-if "preset_applied" not in st.session_state:
-    st.session_state.preset_applied = False
 if "age_val" not in st.session_state:
-    st.session_state.age_val = 54
+    st.session_state.age_val = 45
 if "sex_val" not in st.session_state:
     st.session_state.sex_val = "M"
 if "chest_pain_val" not in st.session_state:
@@ -53,77 +51,53 @@ if "chest_pain_val" not in st.session_state:
 if "exercise_angina_val" not in st.session_state:
     st.session_state.exercise_angina_val = "N"
 if "resting_bp_val" not in st.session_state:
-    st.session_state.resting_bp_val = 130
+    st.session_state.resting_bp_val = 120
 if "cholesterol_val" not in st.session_state:
-    st.session_state.cholesterol_val = 220
+    st.session_state.cholesterol_val = 190
 if "fasting_bs_val" not in st.session_state:
     st.session_state.fasting_bs_val = "Normal (≤ 120 mg/dL)"
 if "resting_ecg_val" not in st.session_state:
     st.session_state.resting_ecg_val = "Normal"
 if "max_hr_val" not in st.session_state:
-    st.session_state.max_hr_val = 145
+    st.session_state.max_hr_val = 150
 if "oldpeak_val" not in st.session_state:
-    st.session_state.oldpeak_val = 1.0
+    st.session_state.oldpeak_val = 0.0
 if "st_slope_val" not in st.session_state:
-    st.session_state.st_slope_val = "Flat"
+    st.session_state.st_slope_val = "Up"
 if "has_run" not in st.session_state:
     st.session_state.has_run = False
 if "active_mode" not in st.session_state:
     st.session_state.active_mode = "Patient Friendly"
 
-def set_profile(profile_type):
-    if profile_type == "high_risk":
-        st.session_state.age_val = 58
-        st.session_state.sex_val = "M"
-        st.session_state.chest_pain_val = "ASY"
-        st.session_state.exercise_angina_val = "Y"
-        st.session_state.resting_bp_val = 145
-        st.session_state.cholesterol_val = 289
-        st.session_state.fasting_bs_val = "Elevated (> 120 mg/dL)"
-        st.session_state.resting_ecg_val = "Normal"
-        st.session_state.max_hr_val = 128
-        st.session_state.oldpeak_val = 2.6
-        st.session_state.st_slope_val = "Flat"
-        st.session_state.has_run = True
-    elif profile_type == "borderline":
-        st.session_state.age_val = 52
-        st.session_state.sex_val = "F"
-        st.session_state.chest_pain_val = "ATA"
-        st.session_state.exercise_angina_val = "N"
-        st.session_state.resting_bp_val = 135
-        st.session_state.cholesterol_val = 230
-        st.session_state.fasting_bs_val = "Normal (≤ 120 mg/dL)"
-        st.session_state.resting_ecg_val = "ST"
-        st.session_state.max_hr_val = 148
-        st.session_state.oldpeak_val = 1.2
-        st.session_state.st_slope_val = "Flat"
-        st.session_state.has_run = True
-    elif profile_type == "healthy":
-        st.session_state.age_val = 36
-        st.session_state.sex_val = "M"
-        st.session_state.chest_pain_val = "NAP"
-        st.session_state.exercise_angina_val = "N"
-        st.session_state.resting_bp_val = 118
-        st.session_state.cholesterol_val = 185
-        st.session_state.fasting_bs_val = "Normal (≤ 120 mg/dL)"
-        st.session_state.resting_ecg_val = "Normal"
-        st.session_state.max_hr_val = 168
-        st.session_state.oldpeak_val = 0.2
-        st.session_state.st_slope_val = "Up"
-        st.session_state.has_run = True
-    elif profile_type == "reset":
-        st.session_state.age_val = 40
-        st.session_state.sex_val = "M"
-        st.session_state.chest_pain_val = "ATA"
-        st.session_state.exercise_angina_val = "N"
-        st.session_state.resting_bp_val = 120
-        st.session_state.cholesterol_val = 200
-        st.session_state.fasting_bs_val = "Normal (≤ 120 mg/dL)"
-        st.session_state.resting_ecg_val = "Normal"
-        st.session_state.max_hr_val = 150
-        st.session_state.oldpeak_val = 1.0
-        st.session_state.st_slope_val = "Flat"
-        st.session_state.has_run = False
+def reset_to_normal():
+    normal_defaults = {
+        "age_val": 45,
+        "sex_val": "M",
+        "chest_pain_val": "NAP",
+        "exercise_angina_val": "N",
+        "resting_bp_val": 120,
+        "cholesterol_val": 190,
+        "fasting_bs_val": "Normal (≤ 120 mg/dL)",
+        "resting_ecg_val": "Normal",
+        "max_hr_val": 150,
+        "oldpeak_val": 0.0,
+        "st_slope_val": "Up",
+        "has_run": False,
+        # Synchronize direct widget keys
+        "in_age": 45,
+        "in_sex": "M",
+        "in_cp": "NAP",
+        "in_ea": "N",
+        "in_bp": 120,
+        "in_chol": 190,
+        "in_fbs": "Normal (≤ 120 mg/dL)",
+        "in_ecg": "Normal",
+        "in_mhr": 150,
+        "in_oldpeak": 0.0,
+        "in_slope": "Up",
+    }
+    for k, v in normal_defaults.items():
+        st.session_state[k] = v
 
 # ---------------------------------------------------------------
 # Custom Light Theme Design System + Mobile Responsiveness
@@ -404,28 +378,54 @@ st.markdown(
         height: 3px !important;
     }
 
-    /* Primary CTA Button */
+    /* Buttons Styling */
     div.stButton > button {
+        border-radius: 10px !important;
+        font-weight: 700 !important;
+        transition: all 0.2s ease !important;
+        min-height: 42px !important;
+        width: 100% !important;
+    }
+    div.stButton > button:active {
+        transform: scale(0.99) !important;
+    }
+
+    /* Primary CTA Button (Predict Button) */
+    button[kind="primary"],
+    div.stButton > button[data-testid="baseButton-primary"] {
         background: linear-gradient(135deg, #E11D48 0%, #BE123C 100%) !important;
         color: #FFFFFF !important;
         border: none !important;
-        border-radius: 12px !important;
         padding: 0.85rem 1.5rem !important;
-        font-weight: 700 !important;
         font-size: 1.04rem !important;
         letter-spacing: 0.2px !important;
         box-shadow: 0 4px 14px rgba(225, 29, 72, 0.28) !important;
-        transition: all 0.2s ease !important;
-        width: 100% !important;
         min-height: 46px !important;
     }
-    div.stButton > button:hover {
+    button[kind="primary"]:hover,
+    div.stButton > button[data-testid="baseButton-primary"]:hover {
         background: linear-gradient(135deg, #F43F5E 0%, #CE1440 100%) !important;
         box-shadow: 0 6px 18px rgba(225, 29, 72, 0.38) !important;
         transform: translateY(-1px) !important;
     }
-    div.stButton > button:active {
-        transform: scale(0.99) !important;
+
+    /* Secondary Action Buttons (Restart & Reset) */
+    button[kind="secondary"],
+    div.stButton > button[data-testid="baseButton-secondary"],
+    div.stDownloadButton > button {
+        background: #FFFFFF !important;
+        color: #1E293B !important;
+        border: 1.5px solid #CBD5E1 !important;
+        font-size: 0.9rem !important;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+    }
+    button[kind="secondary"]:hover,
+    div.stButton > button[data-testid="baseButton-secondary"]:hover,
+    div.stDownloadButton > button:hover {
+        background: #F1F5F9 !important;
+        border-color: #94A3B8 !important;
+        color: #0F172A !important;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08) !important;
     }
 
     /* Decision Support & Results Panel */
@@ -678,24 +678,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Quick Autofill Presets Bar (Responsive Buttons)
-st.markdown('<span style="font-size:0.82rem; color:#475569; font-weight:700;">⚡ Instant Diagnostic Profiles:</span>', unsafe_allow_html=True)
-p_col1, p_col2, p_col3, p_col4 = st.columns([1, 1, 1, 0.8])
-with p_col1:
-    if st.button("🔴 High-Risk", use_container_width=True):
-        set_profile("high_risk")
-        st.rerun()
-with p_col2:
-    if st.button("🟡 Borderline", use_container_width=True):
-        set_profile("borderline")
-        st.rerun()
-with p_col3:
-    if st.button("🟢 Healthy", use_container_width=True):
-        set_profile("healthy")
-        st.rerun()
-with p_col4:
-    if st.button("🔄 Reset", use_container_width=True):
-        set_profile("reset")
+# Action Bar: Single Restart & Reset Button
+r_col1, r_col2 = st.columns([3, 1.3])
+with r_col1:
+    st.markdown('<div style="font-size:0.86rem; color:#64748B; font-weight:600; padding-top:8px;">Enter clinical parameters below, or reset all inputs back to normal baseline:</div>', unsafe_allow_html=True)
+with r_col2:
+    if st.button("🔄 Restart & Reset Options", use_container_width=True, type="secondary", help="Reset all clinical metrics to normal baseline values"):
+        reset_to_normal()
         st.rerun()
 
 st.write("")
@@ -925,7 +914,7 @@ with tab_assess:
         )
 
         st.write("")
-        predict_btn = st.button("⚡ Run Clinical Heart Health Risk Analysis", use_container_width=True)
+        predict_btn = st.button("⚡ Run Clinical Heart Health Risk Analysis", use_container_width=True, type="primary")
         if predict_btn:
             st.session_state.has_run = True
 
