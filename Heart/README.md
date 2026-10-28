@@ -37,11 +37,14 @@ This project combines:
 ## ✨ Key Features
 
 - **Accurate Classification**: Powered by a trained **K-Nearest Neighbors (KNN)** model achieving **~86.4% accuracy** on unseen test data.
-- **Probability Meter**: Provides an estimated risk likelihood percentage alongside binary classification.
-- **"Numbers at a Glance" Cards**: Color-coded badges for blood pressure, cholesterol, fasting sugar, and ST depression to highlight areas of concern.
-- **Plain-Language Medical Glossary**: Built-in definitions for complex terms like Angina, ST slope, Oldpeak, and LVH so anyone can understand their report.
-- **Model Input Transparency**: An expandable viewer showing the exact scaled feature vector processed by the model.
-- **Sleek Dark Theme UI**: Custom CSS styling with an animated ECG heartbeat line.
+- **Google Stitch-Aligned UI/UX**: Ultra-modern clinical dark interface with widescreen dual-column diagnostic layout and live SVG telemetry waveform monitor.
+- **Instant Autofill Presets**: 1-click patient demographic presets (*High-Risk*, *Borderline*, *Healthy Baseline*) for instant demonstration and testing.
+- **Continuous Probability Gauge**: Real-time calibrated risk likelihood meter alongside ACC/AHA Class IIb diagnostic outcome cards.
+- **"Numbers at a Glance" Quad-Cards**: High-contrast vitals tiles for Blood Pressure, Cholesterol, Resting ECG, and Exercise Max HR with color-coded safety chips.
+- **Feature Attribution Breakdown (SHAP-Style)**: Visual weight breakdown showing which specific clinical markers pushed the risk estimate higher or lower.
+- **Explainable AI (XAI) & Model Analytics Tab**: Multi-model benchmarking (KNN, Logistic Regression, SVM, Naive Bayes), 2D Clinical Cohort PCA scatter projection, ROC-AUC (0.912), and calibration metrics.
+- **Plain-Language Medical Glossary**: 14 jargon-free expandable definitions for complex cardiology terms.
+- **Downloadable Clinical Summary**: One-click exportable text/markdown medical summary report.
 
 ---
 
