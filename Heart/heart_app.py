@@ -144,10 +144,33 @@ st.markdown(
         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
         color: #0F172A !important;
     }
-    [data-testid="stHeader"] { height: 0; }
+
+    /* Completely Remove Streamlit Default Header, Toolbar, Deploy Button & Decoration Bar */
+    #MainMenu { visibility: hidden !important; display: none !important; }
+    header, [data-testid="stHeader"] {
+        visibility: hidden !important;
+        display: none !important;
+        height: 0px !important;
+    }
+    [data-testid="stToolbar"] {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    [data-testid="stDecoration"] {
+        visibility: hidden !important;
+        display: none !important;
+        height: 0px !important;
+    }
+    .stAppDeployButton {
+        display: none !important;
+    }
+    footer {
+        visibility: hidden !important;
+        display: none !important;
+    }
     
     .block-container {
-        padding-top: 1.2rem !important;
+        padding-top: 1rem !important;
         padding-bottom: 3rem !important;
         max-width: 1380px !important;
     }
