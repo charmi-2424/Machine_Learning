@@ -7,6 +7,7 @@ A curated collection of machine learning projects, exploratory data analysis (ED
 ## 🚀 Projects
 
 ### 1. [❤️ Heart Disease Risk Prediction & Web App](./Heart/README.md)
+- **Live Demo**: [Cardiovascular Risk Diagnostic | AI-ML · Streamlit](https://charmi-heart-health-predictio.streamlit.app/)
 - **Path**: [`Heart/`](./Heart/)
 - **Tech Stack**: Python, Scikit-Learn, Streamlit, Pandas, Joblib
 - **Model**: K-Nearest Neighbors Classifier (**86.4% accuracy**)

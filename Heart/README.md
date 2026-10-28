@@ -1,11 +1,14 @@
 # ❤️ Heart Disease Prediction & Interactive Health App
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://charmi-heart-health-predictio.streamlit.app/)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.37%2B-FF4B4B.svg)](https://streamlit.io/)
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-Machine%20Learning-F7931E.svg)](https://scikit-learn.org/)
 [![Accuracy](https://img.shields.io/badge/Model%20Accuracy-86.4%25-brightgreen.svg)](#model-performance)
 
-An end-to-end Machine Learning project that assesses the risk of heart disease based on clinical indicators and patient test results. It features an exploratory data analysis (EDA) pipeline, multi-model evaluation, and an interactive, user-friendly **Streamlit web application** designed with plain-language medical explanations and a modern dark UI.
+> 🌐 **Live Deployed App:** [Cardiovascular Risk Diagnostic | AI-ML · Streamlit](https://charmi-heart-health-predictio.streamlit.app/)
+
+An end-to-end Machine Learning project that assesses the risk of heart disease based on clinical indicators and patient test results. It features an exploratory data analysis (EDA) pipeline, multi-model evaluation, and an interactive, user-friendly **Streamlit web application** designed with a clean clinical light UI, responsive mobile layout, and plain-language medical explanations.
 
 Developed by **Charmi** as part of the Machine Learning portfolio.
 
@@ -124,10 +127,18 @@ Heart/
 
 ## 🚀 How to Run the Application
 
-### 1. Prerequisites
+### 🌐 Option 1: Live Hosted Application (No Installation Needed)
+The easiest way to explore the app is directly in your browser:
+👉 **[Cardiovascular Risk Diagnostic | AI-ML · Streamlit](https://charmi-heart-health-predictio.streamlit.app/)**
+
+---
+
+### 💻 Option 2: Run Locally on Your Machine
+
+#### 1. Prerequisites
 Ensure you have Python 3.8+ installed.
 
-### 2. Install Required Packages
+#### 2. Install Required Packages
 In your terminal, run:
 
 ```bash
