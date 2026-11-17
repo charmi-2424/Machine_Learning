@@ -40,64 +40,41 @@ def load_cohort_data():
 raw_cohort_df = load_cohort_data()
 
 # ---------------------------------------------------------------
-# Session State for Normal Baseline & Options
+# Session State for Live Prediction & Baseline Inputs
 # ---------------------------------------------------------------
-if "age_val" not in st.session_state:
-    st.session_state.age_val = 45
-if "sex_val" not in st.session_state:
-    st.session_state.sex_val = "M"
-if "chest_pain_val" not in st.session_state:
-    st.session_state.chest_pain_val = "NAP"
-if "exercise_angina_val" not in st.session_state:
-    st.session_state.exercise_angina_val = "N"
-if "resting_bp_val" not in st.session_state:
-    st.session_state.resting_bp_val = 120
-if "cholesterol_val" not in st.session_state:
-    st.session_state.cholesterol_val = 190
-if "fasting_bs_val" not in st.session_state:
-    st.session_state.fasting_bs_val = "Normal (≤ 120 mg/dL)"
-if "resting_ecg_val" not in st.session_state:
-    st.session_state.resting_ecg_val = "Normal"
-if "max_hr_val" not in st.session_state:
-    st.session_state.max_hr_val = 150
-if "oldpeak_val" not in st.session_state:
-    st.session_state.oldpeak_val = 0.0
-if "st_slope_val" not in st.session_state:
-    st.session_state.st_slope_val = "Up"
+DEFAULT_INPUTS = {
+    "in_age": 45,
+    "in_sex": "M",
+    "in_cp": "NAP",
+    "in_ea": "N",
+    "in_bp": 120,
+    "in_chol": 190,
+    "in_fbs": "Normal (≤ 120 mg/dL)",
+    "in_ecg": "Normal",
+    "in_mhr": 150,
+    "in_oldpeak": 0.0,
+    "in_slope": "Up",
+}
+
+for k, v in DEFAULT_INPUTS.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
+
+if "live_predict_mode" not in st.session_state:
+    st.session_state.live_predict_mode = True
 if "has_run" not in st.session_state:
     st.session_state.has_run = False
-if "active_mode" not in st.session_state:
-    st.session_state.active_mode = "Patient Friendly"
+if "last_evaluated_time" not in st.session_state:
+    st.session_state.last_evaluated_time = None
+if "just_clicked_predict" not in st.session_state:
+    st.session_state.just_clicked_predict = False
 
 def reset_to_normal():
-    normal_defaults = {
-        "age_val": 45,
-        "sex_val": "M",
-        "chest_pain_val": "NAP",
-        "exercise_angina_val": "N",
-        "resting_bp_val": 120,
-        "cholesterol_val": 190,
-        "fasting_bs_val": "Normal (≤ 120 mg/dL)",
-        "resting_ecg_val": "Normal",
-        "max_hr_val": 150,
-        "oldpeak_val": 0.0,
-        "st_slope_val": "Up",
-        "has_run": False,
-        # Synchronize direct widget keys
-        "in_age": 45,
-        "in_sex": "M",
-        "in_cp": "NAP",
-        "in_ea": "N",
-        "in_bp": 120,
-        "in_chol": 190,
-        "in_fbs": "Normal (≤ 120 mg/dL)",
-        "in_ecg": "Normal",
-        "in_mhr": 150,
-        "in_oldpeak": 0.0,
-        "in_slope": "Up",
-    }
-    for k, v in normal_defaults.items():
+    for k, v in DEFAULT_INPUTS.items():
         st.session_state[k] = v
+    st.session_state.has_run = False
+    st.session_state.last_evaluated_time = None
+    st.session_state.just_clicked_predict = False
 
 # ---------------------------------------------------------------
 # Custom Light Theme Design System + Mobile Responsiveness
@@ -753,7 +730,7 @@ with tab_assess:
         )
         d_c1, d_c2 = st.columns(2)
         with d_c1:
-            age = st.slider("Age (years)", 18, 100, st.session_state.age_val, key="in_age")
+            age = st.slider("Age (years)", 18, 100, key="in_age")
             st.caption(f"Cohort: **{age} years** • Max HR: **{220 - age} BPM**")
         with d_c2:
             sex_options = ["M", "F"]
@@ -761,7 +738,6 @@ with tab_assess:
             gender = st.selectbox(
                 "Biological Sex",
                 sex_options,
-                index=sex_options.index(st.session_state.sex_val) if st.session_state.sex_val in sex_options else 0,
                 format_func=lambda x: sex_labels[x],
                 help="Cardiovascular risk patterns differ across biological sexes.",
                 key="in_sex",
@@ -790,7 +766,6 @@ with tab_assess:
         chest_pain = st.selectbox(
             "Chest Pain Presentation",
             cp_options,
-            index=cp_options.index(st.session_state.chest_pain_val) if st.session_state.chest_pain_val in cp_options else 0,
             format_func=lambda x: cp_labels[x],
             help="Clinical categorization of chest discomfort based on ACC/AHA criteria.",
             key="in_cp",
@@ -802,7 +777,6 @@ with tab_assess:
         exercise_angina = st.selectbox(
             "Exercise-Induced Angina (Pain during exertion)",
             angina_options,
-            index=angina_options.index(st.session_state.exercise_angina_val) if st.session_state.exercise_angina_val in angina_options else 0,
             format_func=lambda x: angina_labels[x],
             help="Substernal tightness or pain triggered while climbing stairs, walking fast, or working out.",
             key="in_ea",
@@ -824,7 +798,7 @@ with tab_assess:
         with b_c1:
             resting_bp = st.number_input(
                 "Resting Blood Pressure (mm Hg)",
-                80, 200, st.session_state.resting_bp_val,
+                80, 200,
                 help="Systolic reading at rest. < 120 mm Hg is optimal, ≥ 140 mm Hg is hypertensive.",
                 key="in_bp",
             )
@@ -833,7 +807,7 @@ with tab_assess:
         with b_c2:
             cholesterol = st.number_input(
                 "Serum Cholesterol (mg/dL)",
-                100, 600, st.session_state.cholesterol_val,
+                100, 600,
                 help="Total circulating cholesterol. < 200 mg/dL is desirable; ≥ 240 mg/dL is high.",
                 key="in_chol",
             )
@@ -844,7 +818,6 @@ with tab_assess:
         fbs_selection = st.radio(
             "Fasting Blood Sugar (FastingBS after 8+ hrs fasting)",
             fbs_options,
-            index=0 if st.session_state.fasting_bs_val == "Normal (≤ 120 mg/dL)" else 1,
             horizontal=True,
             help="Values above 120 mg/dL indicate diabetic risk which accelerates arterial plaque formation.",
             key="in_fbs",
@@ -872,7 +845,6 @@ with tab_assess:
         resting_ecg = st.selectbox(
             "Resting ECG Baseline Result",
             ecg_options,
-            index=ecg_options.index(st.session_state.resting_ecg_val) if st.session_state.resting_ecg_val in ecg_options else 0,
             format_func=lambda x: ecg_labels[x],
             help="Electrical waveform patterns recorded while resting calmly.",
             key="in_ecg",
@@ -882,7 +854,7 @@ with tab_assess:
         with s_c1:
             max_hr = st.slider(
                 "Peak Exercise Heart Rate (MaxHR)",
-                60, 220, st.session_state.max_hr_val,
+                60, 220,
                 help="Maximum heart rate achieved during exercise treadmill testing.",
                 key="in_mhr",
             )
@@ -891,7 +863,7 @@ with tab_assess:
         with s_c2:
             oldpeak = st.slider(
                 "ST Depression (Oldpeak mm)",
-                0.0, 6.0, float(st.session_state.oldpeak_val),
+                0.0, 6.0,
                 step=0.1,
                 help="Extent of ST segment depression induced by exercise relative to rest. 0 is ideal.",
                 key="in_oldpeak",
@@ -907,16 +879,34 @@ with tab_assess:
         st_slope = st.selectbox(
             "Peak Exercise ST Slope Morphology",
             slope_options,
-            index=slope_options.index(st.session_state.st_slope_val) if st.session_state.st_slope_val in slope_options else 0,
             format_func=lambda x: slope_labels[x],
             help="Direction of the ST segment slope at peak physical effort.",
             key="in_slope",
         )
 
         st.write("")
-        predict_btn = st.button("⚡ Run Clinical Heart Health Risk Analysis", use_container_width=True, type="primary")
+        ctl_c1, ctl_c2 = st.columns([1, 1.3])
+        with ctl_c1:
+            live_mode = st.toggle(
+                "⚡ Live Predicting",
+                value=st.session_state.live_predict_mode,
+                help="Real-Time AI Mode: Automatically predicts cardiovascular risk as you adjust any slider or dropdown.",
+                key="live_predict_toggle",
+            )
+            st.session_state.live_predict_mode = live_mode
+        with ctl_c2:
+            predict_btn = st.button(
+                "⚡ Run Clinical Risk Analysis",
+                use_container_width=True,
+                type="primary",
+                help="Evaluate patient risk metrics and calculate cardiovascular risk diagnosis",
+            )
+
         if predict_btn:
             st.session_state.has_run = True
+            st.session_state.last_evaluated_time = datetime.now().strftime("%I:%M:%S %p")
+            st.session_state.just_clicked_predict = True
+            st.toast("❤️ Clinical Heart Risk Analysis computed successfully!", icon="✅")
 
     # ---------------------------------------------------------------
     # EXACT PREDICTION PIPELINE EXECUTION (UNCHANGED)
@@ -952,226 +942,277 @@ with tab_assess:
     # ---------------------------------------------------------------
     # RIGHT COLUMN: DECISION SUPPORT & OUTCOME (Light Modern Aesthetic)
     # ---------------------------------------------------------------
+    should_show_results = st.session_state.live_predict_mode or st.session_state.has_run
+
     with right_col:
-        st.markdown('<span style="font-size:0.75rem; font-weight:800; color:#64748B; letter-spacing:0.8px; text-transform:uppercase;">CLINICAL DECISION SUPPORT PANEL</span>', unsafe_allow_html=True)
-
-        if prediction == 1:
+        if not should_show_results:
+            st.markdown('<span style="font-size:0.75rem; font-weight:800; color:#64748B; letter-spacing:0.8px; text-transform:uppercase;">CLINICAL DECISION SUPPORT PANEL</span>', unsafe_allow_html=True)
             st.markdown(
-                f"""
-                <div class="result-card-elevated">
-                    <div class="result-tag" style="color:#BE123C;">⚠️ ACC/AHA CLASS IIb CLINICAL RISK NOTIFICATION</div>
-                    <div class="result-title" style="color:#9F1239;">Elevated Risk Identified</div>
-                    <p class="result-desc" style="color:#881337;">
-                        Based on the multivariate clinical indicators entered, this profile matches phenotypic patterns 
-                        observed in patients diagnosed with coronary heart disease (CAD). 
-                        <b>This is a screening estimate, not a standalone medical diagnosis.</b> 
-                        Prompt consultation with a certified cardiologist is recommended.
+                """
+                <div class="result-card-low" style="background:#FFFFFF; border: 1.5px dashed #CBD5E1; margin-top:10px;">
+                    <div class="result-tag" style="color:#64748B;">⚡ READY FOR DIAGNOSTIC EVALUATION</div>
+                    <div class="result-title" style="color:#0F172A; font-size:1.45rem;">Awaiting Patient Analysis</div>
+                    <p class="result-desc" style="color:#475569;">
+                        Configure clinical parameters on the left and click <b>⚡ Run Clinical Risk Analysis</b> 
+                        to evaluate cardiovascular risk, or keep <b>⚡ Live Predicting</b> enabled for real-time instant prediction.
                     </p>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-            theme_color = "#E11D48"
-            status_text = "HIGH RISK DETECTED"
         else:
+            if st.session_state.just_clicked_predict:
+                eval_time = st.session_state.last_evaluated_time or datetime.now().strftime("%I:%M:%S %p")
+                st.success(f"✅ Risk analysis evaluated at {eval_time} for current patient profile.")
+                st.session_state.just_clicked_predict = False
+
+            if st.session_state.live_predict_mode:
+                badge_html = """
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+                    <span style="font-size:0.75rem; font-weight:800; color:#64748B; letter-spacing:0.8px; text-transform:uppercase;">CLINICAL DECISION SUPPORT PANEL</span>
+                    <span class="badge-pill badge-mint" style="display:inline-flex; align-items:center; gap:5px;">
+                        <span style="width:7px; height:7px; background:#059669; border-radius:50%; display:inline-block;"></span>
+                        LIVE PREDICTING ACTIVE
+                    </span>
+                </div>
+                """
+            else:
+                eval_time = st.session_state.last_evaluated_time or datetime.now().strftime("%I:%M:%S %p")
+                badge_html = f"""
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+                    <span style="font-size:0.75rem; font-weight:800; color:#64748B; letter-spacing:0.8px; text-transform:uppercase;">CLINICAL DECISION SUPPORT PANEL</span>
+                    <span class="badge-pill badge-primary">EVALUATED AT {eval_time}</span>
+                </div>
+                """
+            st.markdown(badge_html, unsafe_allow_html=True)
+
             st.markdown(
                 f"""
-                <div class="result-card-low">
-                    <div class="result-tag" style="color:#047857;">✅ FAVORABLE CARDIOVASCULAR PROFILE</div>
-                    <div class="result-title" style="color:#065F46;">Low Risk Profile</div>
-                    <p class="result-desc" style="color:#064E3B;">
-                        Based on the clinical parameters entered, your hemodynamic and electrocardiographic metrics 
-                        align with asymptomatic, low-risk cohorts. Continue routine aerobic exercise, 
-                        balanced nutrition, and periodic clinical health checkups.
-                    </p>
+                <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:8px 12px; margin-bottom:14px; font-size:0.8rem; color:#334155; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                    <span><b>Active Profile:</b> {age}y {sex_labels[gender]} • BP {resting_bp} mmHg • Chol {cholesterol} mg/dL</span>
+                    <span style="color:#0284C7; font-weight:700; font-family:'JetBrains Mono';">Oldpeak {oldpeak:.1f} mm • ST {st_slope}</span>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-            theme_color = "#059669"
-            status_text = "LOW RISK PROFILE"
 
-        # Continuous Likelihood Gauge (Light Modern Gauge)
-        st.markdown(
-            f"""
-            <div class="gauge-wrap">
-                <div>
-                    <div class="gauge-sub">Estimated CAD Likelihood</div>
-                    <div class="gauge-score" style="color:{theme_color};">{probability:.0f}%</div>
-                    <div style="font-size:0.76rem; color:#64748B; font-weight:600;">KNN CALIBRATED PROBABILITY</div>
-                </div>
-                <div style="width:140px; text-align:right;">
-                    <div style="background:#E2E8F0; border-radius:99px; height:12px; overflow:hidden; border:1px solid #CBD5E1; margin-bottom:6px;">
-                        <div style="width:{probability:.0f}%; background:{theme_color}; height:100%; border-radius:99px;"></div>
+            if prediction == 1:
+                st.markdown(
+                    f"""
+                    <div class="result-card-elevated">
+                        <div class="result-tag" style="color:#BE123C;">⚠️ ACC/AHA CLASS IIb CLINICAL RISK NOTIFICATION</div>
+                        <div class="result-title" style="color:#9F1239;">Elevated Risk Identified</div>
+                        <p class="result-desc" style="color:#881337;">
+                            Based on the multivariate clinical indicators entered, this profile matches phenotypic patterns 
+                            observed in patients diagnosed with coronary heart disease (CAD). 
+                            <b>This is a screening estimate, not a standalone medical diagnosis.</b> 
+                            Prompt consultation with a certified cardiologist is recommended.
+                        </p>
                     </div>
-                    <span style="font-size:0.75rem; color:#334155; font-weight:700;">{status_text}</span>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        # 4-Quad Vitals Grid
-        st.markdown('<span style="font-size:0.78rem; font-weight:800; color:#334155; text-transform:uppercase; letter-spacing:0.5px;">VITAL SIGNS & ELECTROCARDIOGRAPHIC SUMMARY</span>', unsafe_allow_html=True)
-        
-        bp_warn = resting_bp >= 140
-        chol_warn = cholesterol >= 240
-        ecg_warn = resting_ecg != "Normal"
-        hr_ratio = max_hr / max(1, (220 - age))
-        hr_warn = hr_ratio < 0.70 or oldpeak >= 2.0
-
-        st.markdown(
-            f"""
-            <div class="stat-quad-grid">
-                <div class="stat-tile">
-                    <div class="stat-tile-label">Resting BP</div>
-                    <div class="stat-tile-val">{resting_bp} <span style="font-size:0.8rem; color:#64748B;">mm Hg</span></div>
-                    <span class="chip {'chip-warn' if bp_warn else 'chip-ok'}">{'HIGH (STAGE 1+)' if bp_warn else 'NORMAL (< 140)'}</span>
-                </div>
-                <div class="stat-tile">
-                    <div class="stat-tile-label">Serum Cholesterol</div>
-                    <div class="stat-tile-val">{cholesterol} <span style="font-size:0.8rem; color:#64748B;">mg/dL</span></div>
-                    <span class="chip {'chip-warn' if chol_warn else 'chip-ok'}">{'ELEVATED (≥ 240)' if chol_warn else 'DESIRABLE'}</span>
-                </div>
-                <div class="stat-tile">
-                    <div class="stat-tile-label">Resting ECG</div>
-                    <div class="stat-tile-val">{resting_ecg}</div>
-                    <span class="chip {'chip-warn' if ecg_warn else 'chip-ok'}">{'ABNORMAL WAVE' if ecg_warn else 'NORMAL BASELINE'}</span>
-                </div>
-                <div class="stat-tile">
-                    <div class="stat-tile-label">Exercise Max HR</div>
-                    <div class="stat-tile-val">{max_hr} <span style="font-size:0.8rem; color:#64748B;">BPM</span></div>
-                    <span class="chip {'chip-warn' if hr_warn else 'chip-ok'}">{int(hr_ratio*100)}% TARGET HR</span>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        # Key Factor Impact Breakdown (SHAP-style attribution)
-        st.markdown(
-            """
-            <div class="directive-box">
-                <div class="directive-header">
-                    <span>🔍 Key Factor Attribution (Feature Weights)</span>
-                </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        # Dynamic risk contributor items
-        risk_drivers = []
-        if oldpeak >= 1.5:
-            risk_drivers.append(("ST Depression (Oldpeak)", f"+{min(35, int(oldpeak*12))}% Risk Contribution", "#E11D48", "Ischemic ST drop"))
-        if chest_pain == "ASY":
-            risk_drivers.append(("Asymptomatic Presentation", "+22% Risk Contribution", "#E11D48", "Silent CAD risk factor"))
-        if exercise_angina == "Y":
-            risk_drivers.append(("Exercise-Induced Angina", "+19% Risk Contribution", "#E11D48", "Exertional chest discomfort"))
-        if st_slope in ["Flat", "Down"]:
-            risk_drivers.append((f"ST Slope ({st_slope})", "+16% Risk Contribution", "#E11D48", "Impaired coronary reserve"))
-        if resting_bp >= 140:
-            risk_drivers.append(("Systolic Blood Pressure", "+12% Risk Contribution", "#E11D48", f"{resting_bp} mm Hg"))
-        if cholesterol >= 240:
-            risk_drivers.append(("Serum Cholesterol", "+11% Risk Contribution", "#E11D48", f"{cholesterol} mg/dL"))
-        if fasting_bs == 1:
-            risk_drivers.append(("Fasting Blood Sugar", "+9% Risk Contribution", "#E11D48", "> 120 mg/dL"))
-        
-        # Protective drivers
-        if st_slope == "Up":
-            risk_drivers.append(("Upsloping ST Segment", "-15% Protective Factor", "#059669", "Healthy coronary response"))
-        if max_hr >= 160:
-            risk_drivers.append(("Robust Max Heart Rate", "-12% Protective Factor", "#059669", f"{max_hr} BPM achieved"))
-        if chest_pain in ["ATA", "NAP"]:
-            risk_drivers.append(("Non-Cardiac Discomfort", "-8% Protective Factor", "#059669", "Atypical / Non-anginal"))
-
-        if not risk_drivers:
-            risk_drivers.append(("Balanced Baseline Vitals", "Optimal Cardio Metrics", "#059669", "Within normal thresholds"))
-
-        for label, impact, color, note in risk_drivers[:4]:
+                    """,
+                    unsafe_allow_html=True,
+                )
+                theme_color = "#E11D48"
+                status_text = "HIGH RISK DETECTED"
+            else:
+                st.markdown(
+                    f"""
+                    <div class="result-card-low">
+                        <div class="result-tag" style="color:#047857;">✅ FAVORABLE CARDIOVASCULAR PROFILE</div>
+                        <div class="result-title" style="color:#065F46;">Low Risk Profile</div>
+                        <p class="result-desc" style="color:#064E3B;">
+                            Based on the clinical parameters entered, your hemodynamic and electrocardiographic metrics 
+                            align with asymptomatic, low-risk cohorts. Continue routine aerobic exercise, 
+                            balanced nutrition, and periodic clinical health checkups.
+                        </p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                theme_color = "#059669"
+                status_text = "LOW RISK PROFILE"
+    
+            # Continuous Likelihood Gauge (Light Modern Gauge)
             st.markdown(
                 f"""
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:0.86rem;">
+                <div class="gauge-wrap">
                     <div>
-                        <span style="color:#0F172A; font-weight:600;">{label}</span>
-                        <span style="color:#64748B; font-size:0.76rem; margin-left:6px;">({note})</span>
+                        <div class="gauge-sub">Estimated CAD Likelihood</div>
+                        <div class="gauge-score" style="color:{theme_color};">{probability:.0f}%</div>
+                        <div style="font-size:0.76rem; color:#64748B; font-weight:600;">KNN CALIBRATED PROBABILITY</div>
                     </div>
-                    <span style="color:{color}; font-weight:700; font-family:'JetBrains Mono', monospace;">{impact}</span>
+                    <div style="width:140px; text-align:right;">
+                        <div style="background:#E2E8F0; border-radius:99px; height:12px; overflow:hidden; border:1px solid #CBD5E1; margin-bottom:6px;">
+                            <div style="width:{probability:.0f}%; background:{theme_color}; height:100%; border-radius:99px;"></div>
+                        </div>
+                        <span style="font-size:0.75rem; color:#334155; font-weight:700;">{status_text}</span>
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        # Actionable Directives Box
-        st.markdown(
-            """
-            <div class="directive-box">
-                <div class="directive-header">
-                    <span>📋 Clinical Directives & Recommendations</span>
+    
+            # 4-Quad Vitals Grid
+            st.markdown('<span style="font-size:0.78rem; font-weight:800; color:#334155; text-transform:uppercase; letter-spacing:0.5px;">VITAL SIGNS & ELECTROCARDIOGRAPHIC SUMMARY</span>', unsafe_allow_html=True)
+            
+            bp_warn = resting_bp >= 140
+            chol_warn = cholesterol >= 240
+            ecg_warn = resting_ecg != "Normal"
+            hr_ratio = max_hr / max(1, (220 - age))
+            hr_warn = hr_ratio < 0.70 or oldpeak >= 2.0
+    
+            st.markdown(
+                f"""
+                <div class="stat-quad-grid">
+                    <div class="stat-tile">
+                        <div class="stat-tile-label">Resting BP</div>
+                        <div class="stat-tile-val">{resting_bp} <span style="font-size:0.8rem; color:#64748B;">mm Hg</span></div>
+                        <span class="chip {'chip-warn' if bp_warn else 'chip-ok'}">{'HIGH (STAGE 1+)' if bp_warn else 'NORMAL (< 140)'}</span>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="stat-tile-label">Serum Cholesterol</div>
+                        <div class="stat-tile-val">{cholesterol} <span style="font-size:0.8rem; color:#64748B;">mg/dL</span></div>
+                        <span class="chip {'chip-warn' if chol_warn else 'chip-ok'}">{'ELEVATED (≥ 240)' if chol_warn else 'DESIRABLE'}</span>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="stat-tile-label">Resting ECG</div>
+                        <div class="stat-tile-val">{resting_ecg}</div>
+                        <span class="chip {'chip-warn' if ecg_warn else 'chip-ok'}">{'ABNORMAL WAVE' if ecg_warn else 'NORMAL BASELINE'}</span>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="stat-tile-label">Exercise Max HR</div>
+                        <div class="stat-tile-val">{max_hr} <span style="font-size:0.8rem; color:#64748B;">BPM</span></div>
+                        <span class="chip {'chip-warn' if hr_warn else 'chip-ok'}">{int(hr_ratio*100)}% TARGET HR</span>
+                    </div>
                 </div>
-                <div class="directive-item">
-                    <span style="color:#059669; font-weight:700;">✓</span>
-                    <span><b>Cardiology Consultation:</b> Share this comprehensive multi-parameter screening with your primary care provider.</span>
+                """,
+                unsafe_allow_html=True,
+            )
+    
+            # Key Factor Impact Breakdown (SHAP-style attribution)
+            st.markdown(
+                """
+                <div class="directive-box">
+                    <div class="directive-header">
+                        <span>🔍 Key Factor Attribution (Feature Weights)</span>
+                    </div>
+                """,
+                unsafe_allow_html=True,
+            )
+    
+            # Dynamic risk contributor items
+            risk_drivers = []
+            if oldpeak >= 1.5:
+                risk_drivers.append(("ST Depression (Oldpeak)", f"+{min(35, int(oldpeak*12))}% Risk Contribution", "#E11D48", "Ischemic ST drop"))
+            if chest_pain == "ASY":
+                risk_drivers.append(("Asymptomatic Presentation", "+22% Risk Contribution", "#E11D48", "Silent CAD risk factor"))
+            if exercise_angina == "Y":
+                risk_drivers.append(("Exercise-Induced Angina", "+19% Risk Contribution", "#E11D48", "Exertional chest discomfort"))
+            if st_slope in ["Flat", "Down"]:
+                risk_drivers.append((f"ST Slope ({st_slope})", "+16% Risk Contribution", "#E11D48", "Impaired coronary reserve"))
+            if resting_bp >= 140:
+                risk_drivers.append(("Systolic Blood Pressure", "+12% Risk Contribution", "#E11D48", f"{resting_bp} mm Hg"))
+            if cholesterol >= 240:
+                risk_drivers.append(("Serum Cholesterol", "+11% Risk Contribution", "#E11D48", f"{cholesterol} mg/dL"))
+            if fasting_bs == 1:
+                risk_drivers.append(("Fasting Blood Sugar", "+9% Risk Contribution", "#E11D48", "> 120 mg/dL"))
+            
+            # Protective drivers
+            if st_slope == "Up":
+                risk_drivers.append(("Upsloping ST Segment", "-15% Protective Factor", "#059669", "Healthy coronary response"))
+            if max_hr >= 160:
+                risk_drivers.append(("Robust Max Heart Rate", "-12% Protective Factor", "#059669", f"{max_hr} BPM achieved"))
+            if chest_pain in ["ATA", "NAP"]:
+                risk_drivers.append(("Non-Cardiac Discomfort", "-8% Protective Factor", "#059669", "Atypical / Non-anginal"))
+    
+            if not risk_drivers:
+                risk_drivers.append(("Balanced Baseline Vitals", "Optimal Cardio Metrics", "#059669", "Within normal thresholds"))
+    
+            for label, impact, color, note in risk_drivers[:4]:
+                st.markdown(
+                    f"""
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:0.86rem;">
+                        <div>
+                            <span style="color:#0F172A; font-weight:600;">{label}</span>
+                            <span style="color:#64748B; font-size:0.76rem; margin-left:6px;">({note})</span>
+                        </div>
+                        <span style="color:{color}; font-weight:700; font-family:'JetBrains Mono', monospace;">{impact}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+    
+            st.markdown("</div>", unsafe_allow_html=True)
+    
+            # Actionable Directives Box
+            st.markdown(
+                """
+                <div class="directive-box">
+                    <div class="directive-header">
+                        <span>📋 Clinical Directives & Recommendations</span>
+                    </div>
+                    <div class="directive-item">
+                        <span style="color:#059669; font-weight:700;">✓</span>
+                        <span><b>Cardiology Consultation:</b> Share this comprehensive multi-parameter screening with your primary care provider.</span>
+                    </div>
+                    <div class="directive-item">
+                        <span style="color:#0284C7; font-weight:700;">✓</span>
+                        <span><b>Secondary Diagnostics:</b> Consider stress echocardiography or CT coronary angiography if exertional symptoms persist.</span>
+                    </div>
+                    <div class="directive-item">
+                        <span style="color:#D97706; font-weight:700;">✓</span>
+                        <span><b>Lifestyle Interventions:</b> Maintain systolic BP < 130 mm Hg, dietary sodium < 2g/day, and 150 mins/week moderate aerobic activity.</span>
+                    </div>
                 </div>
-                <div class="directive-item">
-                    <span style="color:#0284C7; font-weight:700;">✓</span>
-                    <span><b>Secondary Diagnostics:</b> Consider stress echocardiography or CT coronary angiography if exertional symptoms persist.</span>
-                </div>
-                <div class="directive-item">
-                    <span style="color:#D97706; font-weight:700;">✓</span>
-                    <span><b>Lifestyle Interventions:</b> Maintain systolic BP < 130 mm Hg, dietary sodium < 2g/day, and 150 mins/week moderate aerobic activity.</span>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        # Exportable Medical Summary Report
-        timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        report_text = f"""=======================================================
-❤️ CARDIOVASCULAR RISK EVALUATION REPORT
-Generated: {timestamp_str}
-Project: Heart Disease Prediction & Interactive Health App
-Model: K-Nearest Neighbors (Accuracy: 86.4%)
-=======================================================
-
-PATIENT CLINICAL PROFILE:
-- Age: {age} years
-- Biological Sex: {gender}
-- Chest Pain Presentation: {chest_pain} ({cp_labels.get(chest_pain, '')})
-- Exercise-Induced Angina: {exercise_angina}
-- Resting Blood Pressure: {resting_bp} mm Hg
-- Serum Cholesterol: {cholesterol} mg/dL
-- Fasting Blood Sugar > 120 mg/dL: {'Yes' if fasting_bs == 1 else 'No'}
-- Resting ECG: {resting_ecg}
-- Max Heart Rate: {max_hr} BPM ({pct_max}% of age target)
-- ST Depression (Oldpeak): {oldpeak} mm
-- Peak Exercise ST Slope: {st_slope}
-
-DIAGNOSTIC OUTCOME:
-- Risk Classification: {'ELEVATED CARDIOVASCULAR RISK' if prediction == 1 else 'LOW CARDIOVASCULAR RISK'}
-- Calibrated Probability: {probability:.1f}%
-
-KEY CLINICAL DIRECTIVES:
-1. Schedule a formal review with a certified physician or cardiologist.
-2. Verify blood pressure and cholesterol levels via repeated fasting lab work.
-3. This automated assessment is for decision support and does not replace medical advice.
-=======================================================
-"""
-        st.download_button(
-            label="📄 Download Clinical Summary Report (.txt)",
-            data=report_text,
-            file_name=f"heart_risk_summary_{int(datetime.now().timestamp())}.txt",
-            mime="text/plain",
-            use_container_width=True,
-        )
-
-        # Transparent Model Vector Inspection
-        with st.expander("🔍 Model Feature Vector Transparency (columns.pkl)"):
-            st.caption("Exact encoded feature vector sent to the StandardScaler and KNN classifier:")
-            active_cols = input_df.iloc[0]
-            st.dataframe(active_cols.to_frame(name="Encoded Value"), use_container_width=True)
+                """,
+                unsafe_allow_html=True,
+            )
+    
+            # Exportable Medical Summary Report
+            timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            report_text = f"""=======================================================
+    ❤️ CARDIOVASCULAR RISK EVALUATION REPORT
+    Generated: {timestamp_str}
+    Project: Heart Disease Prediction & Interactive Health App
+    Model: K-Nearest Neighbors (Accuracy: 86.4%)
+    =======================================================
+    
+    PATIENT CLINICAL PROFILE:
+    - Age: {age} years
+    - Biological Sex: {gender}
+    - Chest Pain Presentation: {chest_pain} ({cp_labels.get(chest_pain, '')})
+    - Exercise-Induced Angina: {exercise_angina}
+    - Resting Blood Pressure: {resting_bp} mm Hg
+    - Serum Cholesterol: {cholesterol} mg/dL
+    - Fasting Blood Sugar > 120 mg/dL: {'Yes' if fasting_bs == 1 else 'No'}
+    - Resting ECG: {resting_ecg}
+    - Max Heart Rate: {max_hr} BPM ({pct_max}% of age target)
+    - ST Depression (Oldpeak): {oldpeak} mm
+    - Peak Exercise ST Slope: {st_slope}
+    
+    DIAGNOSTIC OUTCOME:
+    - Risk Classification: {'ELEVATED CARDIOVASCULAR RISK' if prediction == 1 else 'LOW CARDIOVASCULAR RISK'}
+    - Calibrated Probability: {probability:.1f}%
+    
+    KEY CLINICAL DIRECTIVES:
+    1. Schedule a formal review with a certified physician or cardiologist.
+    2. Verify blood pressure and cholesterol levels via repeated fasting lab work.
+    3. This automated assessment is for decision support and does not replace medical advice.
+    =======================================================
+    """
+            st.download_button(
+                label="📄 Download Clinical Summary Report (.txt)",
+                data=report_text,
+                file_name=f"heart_risk_summary_{int(datetime.now().timestamp())}.txt",
+                mime="text/plain",
+                use_container_width=True,
+            )
+    
+            # Transparent Model Vector Inspection
+            with st.expander("🔍 Model Feature Vector Transparency (columns.pkl)"):
+                st.caption("Exact encoded feature vector sent to the StandardScaler and KNN classifier:")
+                active_cols = input_df.iloc[0]
+                st.dataframe(active_cols.to_frame(name="Encoded Value"), use_container_width=True)
 
     # Medical Disclaimer Footer
     st.markdown(
